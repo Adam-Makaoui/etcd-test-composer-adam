@@ -11,6 +11,7 @@ from antithesis.assertions import (
 )
 
 import sys
+import os
 sys.path.append("/opt/antithesis/resources")
 import helper
 
@@ -24,6 +25,7 @@ def simulate_traffic():
     client = helper.connect_to_host()
     num_requests = helper.generate_requests()
     kvs = []
+    mismatched_once = False
 
     for _ in range(num_requests):
 
@@ -38,8 +40,26 @@ def simulate_traffic():
         sometimes(success, "Client can make successful put requests", {"error":error})
 
         if success:
+            # Track whether this write was intentionally modified (for demo / validation only)
+            intentionally_modified = False
+
+            # Optional (OFF by default): introduce exactly one mismatch to demonstrate
+            # that the per-key `always(...)` assertion is active and observable
+            if os.getenv("INTENTIONAL_MISMATCH") == "1" and not mismatched_once:
+                value = value + "_INTENTIONAL_MISMATCH"
+                mismatched_once = True
+                intentionally_modified = True
+
             kvs.append((key, value))
-            print(f"Client: successful put with key '{key}' and value '{value}'")
+
+            # Make the intentional mismatch explicit in logs to avoid confusion
+            if intentionally_modified:
+                print(
+                    f"Client: successful put with key '{key}' and value '{value}' "
+                    "(INTENTIONAL_MISMATCH applied for assertion validation)"
+                )
+            else:
+                print(f"Client: successful put with key '{key}' and value '{value}'")
         else:
             print(f"Client: unsuccessful put with key '{key}', value '{value}', and error '{error}'")
 
@@ -64,9 +84,18 @@ def validate_puts(kvs):
 
         if not success:
             print(f"Client: unsuccessful get with key '{key}', and error '{error}'")
-        elif value != database_value:
-            print(f"Client: a key value mismatch! This shouldn't happen.")
-            return False, (value, database_value)
+        else:
+            # NEW Antithesis Assertion: if the GET succeeds, it must return the value we previously wrote.
+            # This is a stronger, per-operation invariant than the final summary `always(...)` at the end.
+            always(
+                value == database_value,
+                "Read-your-write consistency: successful GET must match PUT",
+                {"key": key, "expected": value, "actual": database_value, "error": error},
+            )
+
+            if value != database_value:
+                print(f"Client: a key value mismatch! This shouldn't happen.")
+                return False, (value, database_value)
 
     print(f"Client: validation ok!")
     return True, None

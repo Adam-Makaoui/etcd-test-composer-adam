@@ -1,53 +1,72 @@
-version: '3.8'
+#version: '3.8' deprecated in docker compose v2
 
 services:
 
   etcd0:
-    image: 'docker.io/bitnami/etcd:3.5'
+    image: registry.k8s.io/etcd:3.6.4-0
     container_name: etcd0
     hostname: etcd0
-    environment: 
-      ETCD_NAME: "etcd0"
-      ETCD_INITIAL_ADVERTISE_PEER_URLS: "http://etcd0:2380"
-      ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
-      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
-      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd0.etcd:2379"
-      ETCD_INITIAL_CLUSTER_TOKEN: "etcd-cluster-1"
-      ETCD_INITIAL_CLUSTER: "etcd0=http://etcd0:2380,etcd1=http://etcd1:2380,etcd2=http://etcd2:2380"
-      ETCD_INITIAL_CLUSTER_STATE: "new"
-      ALLOW_NONE_AUTHENTICATION: "yes"
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd0
+      - --data-dir=/etcd-data
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://etcd0:2379
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-advertise-peer-urls=http://etcd0:2380
+      - --initial-cluster=etcd0=http://etcd0:2380,etcd1=http://etcd1:2380,etcd2=http://etcd2:2380
+      - --initial-cluster-token=etcd-cluster-1
+      - --initial-cluster-state=new
+    volumes:
+      - etcd0-data:/etcd-data
 
   etcd1:
-    image: 'docker.io/bitnami/etcd:3.5'
+    image: registry.k8s.io/etcd:3.6.4-0
     container_name: etcd1
     hostname: etcd1
-    environment: 
-      ETCD_NAME: "etcd1"
-      ETCD_INITIAL_ADVERTISE_PEER_URLS: "http://etcd1:2380"
-      ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
-      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
-      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd1.etcd:2379"
-      ETCD_INITIAL_CLUSTER_TOKEN: "etcd-cluster-1"
-      ETCD_INITIAL_CLUSTER: "etcd0=http://etcd0:2380,etcd1=http://etcd1:2380,etcd2=http://etcd2:2380"
-      ETCD_INITIAL_CLUSTER_STATE: "new"
-      ALLOW_NONE_AUTHENTICATION: "yes"
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd1
+      - --data-dir=/etcd-data
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://etcd1:2379
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-advertise-peer-urls=http://etcd1:2380
+      - --initial-cluster=etcd0=http://etcd0:2380,etcd1=http://etcd1:2380,etcd2=http://etcd2:2380
+      - --initial-cluster-token=etcd-cluster-1
+      - --initial-cluster-state=new
+    volumes:
+      - etcd1-data:/etcd-data
 
   etcd2:
-    image: 'docker.io/bitnami/etcd:3.5'
+    image: registry.k8s.io/etcd:3.6.4-0
     container_name: etcd2
     hostname: etcd2
-    environment: 
-      ETCD_NAME: "etcd2"
-      ETCD_INITIAL_ADVERTISE_PEER_URLS: "http://etcd2:2380"
-      ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
-      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
-      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd2.etcd:2379"
-      ETCD_INITIAL_CLUSTER_TOKEN: "etcd-cluster-1"
-      ETCD_INITIAL_CLUSTER: "etcd0=http://etcd0:2380,etcd1=http://etcd1:2380,etcd2=http://etcd2:2380"
-      ETCD_INITIAL_CLUSTER_STATE: "new"
-      ALLOW_NONE_AUTHENTICATION: "yes"
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd2
+      - --data-dir=/etcd-data
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://etcd2:2379
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-advertise-peer-urls=http://etcd2:2380
+      - --initial-cluster=etcd0=http://etcd0:2380,etcd1=http://etcd1:2380,etcd2=http://etcd2:2380
+      - --initial-cluster-token=etcd-cluster-1
+      - --initial-cluster-state=new
+    volumes:
+      - etcd2-data:/etcd-data
 
   client:
     image: 'etcd-client:latest'
     container_name: client
     entrypoint: ['/entrypoint.py']
+    environment:
+      ANTITHESIS_SDK_LOCAL_OUTPUT: /antithesis/output/sdk_local_output.jsonl
+    volumes:
+      - ../antithesis_output:/antithesis/output
+
+# persistet data for etcd
+volumes:
+  etcd0-data:
+  etcd1-data:
+  etcd2-data:

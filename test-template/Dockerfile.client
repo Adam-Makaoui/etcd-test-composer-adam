@@ -53,6 +53,9 @@ COPY ./python-generate-traffic/parallel_driver_generate_traffic.py /opt/antithes
 # Copying additional resources into a resources folder
 COPY ./python-generate-traffic/resources/helper.py /opt/antithesis/resources/helper.py
 
+# Copying validate only driver into Test Composer directory
+COPY ./python-generate-traffic/validate_only_driver.py /opt/antithesis/test/v1/main/validate_only_driver.py
+RUN chmod +x /opt/antithesis/test/v1/main/validate_only_driver.py
 
 # GO (skipped for local builds on Apple Silicon / minimal local validation)
 #
